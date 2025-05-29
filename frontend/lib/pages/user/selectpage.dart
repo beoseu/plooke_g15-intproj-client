@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/pages/layout.dart';
 import 'package:frontend/components/user/place_card.dart';
+import 'package:frontend/pages/user/paypage.dart';
 
 class SelectPage extends StatefulWidget {
   const SelectPage({super.key});
@@ -78,19 +79,33 @@ class _SelectPageState extends State<SelectPage> {
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 12),
-            OutlinedButton(
+            ElevatedButton(
               onPressed:
                   selectedPlant == null
                       ? null
                       : () {
-                        // Continue logic here
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => PayPage(
+                                  plantName: selectedPlant!,
+                                  price: plants[selectedPlant]!,
+                                ),
+                          ),
+                        );
                       },
               style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: Colors.white),
                 ),
-                side: const BorderSide(color: Colors.black),
-                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: const Text('CONTINUE', style: TextStyle(fontSize: 16)),
             ),
