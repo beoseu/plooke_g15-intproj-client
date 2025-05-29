@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/pages/auth/signin.dart';
+import 'package:frontend/pages/user/homepage.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: SignInPage());
+    return MaterialApp(
+      theme: ThemeData(scaffoldBackgroundColor: Color(0xFFF7F7F7)),
+      home: Scaffold(body: HomePage()),
+    );
   }
 }
