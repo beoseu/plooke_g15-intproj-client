@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/pages/layout.dart';
+import 'package:frontend/pages/user/sumpage.dart';
 
 class PayPage extends StatefulWidget {
   final String plantName;
@@ -89,7 +90,11 @@ class _PayPageState extends State<PayPage> {
                 onPressed:
                     fileName != null
                         ? () {
-                          // Handle confirmation logic
+                          // Navigate to summary page
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => SumPage()),
+                          );
                         }
                         : null,
                 style: OutlinedButton.styleFrom(

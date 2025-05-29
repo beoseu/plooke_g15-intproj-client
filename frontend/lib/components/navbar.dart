@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/pages/user/homepage.dart';
+import 'package:frontend/pages/user/historypage.dart';
 
 class NavBar extends StatelessWidget {
   const NavBar({super.key});
 
-  bool _isCurrentRouteHome(BuildContext context) {
+  bool _isCurrentRoute(BuildContext context, String routeName) {
     final route = ModalRoute.of(context);
-    return route?.settings.name == '/home';
+    return route?.settings.name == routeName;
   }
 
   @override
@@ -27,8 +28,7 @@ class NavBar extends StatelessWidget {
                   alignment: Alignment.center,
                   child: IconButton(
                     onPressed: () {
-                      // Prevent pushing if already on HomePage
-                      if (!_isCurrentRouteHome(context)) {
+                      if (!_isCurrentRoute(context, '/home')) {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
@@ -46,7 +46,15 @@ class NavBar extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: IconButton(
                     onPressed: () {
-                      // Navigate to receipt/history
+                      if (!_isCurrentRoute(context, '/history')) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            settings: const RouteSettings(name: '/history'),
+                            builder: (context) => const HistoryPage(),
+                          ),
+                        );
+                      }
                     },
                     icon: const Icon(Icons.receipt_long, size: 28),
                   ),
