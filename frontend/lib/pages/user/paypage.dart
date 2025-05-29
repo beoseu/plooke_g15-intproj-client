@@ -5,8 +5,16 @@ import 'package:frontend/pages/user/sumpage.dart';
 class PayPage extends StatefulWidget {
   final String plantName;
   final int price;
+  final String locationTitle;
+  final String locationProvince;
 
-  const PayPage({super.key, required this.plantName, required this.price});
+  const PayPage({
+    super.key,
+    required this.plantName,
+    required this.price,
+    required this.locationTitle,
+    required this.locationProvince,
+  });
 
   @override
   State<PayPage> createState() => _PayPageState();

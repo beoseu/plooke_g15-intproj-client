@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/pages/layout.dart';
-import 'package:frontend/components/user/place_card.dart';
+import 'package:frontend/components/user/location_card.dart';
 import 'package:frontend/pages/user/paypage.dart';
 
 class SelectPage extends StatefulWidget {
-  const SelectPage({super.key});
+  final String title;
+  final String province;
+
+  const SelectPage({super.key, required this.title, required this.province});
 
   @override
   State<SelectPage> createState() => _SelectPageState();
@@ -23,7 +26,11 @@ class _SelectPageState extends State<SelectPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const PlaceCard(title: 'เขาเขียว'),
+            LocationCard(
+              title: widget.title,
+              province: widget.province,
+              onTap: () {}, // Optional if not interactive
+            ),
             const SizedBox(height: 24),
             const Center(
               child: Text(
@@ -91,6 +98,8 @@ class _SelectPageState extends State<SelectPage> {
                                 (context) => PayPage(
                                   plantName: selectedPlant!,
                                   price: plants[selectedPlant]!,
+                                  locationTitle: widget.title,
+                                  locationProvince: widget.province,
                                 ),
                           ),
                         );

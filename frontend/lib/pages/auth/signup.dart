@@ -17,6 +17,14 @@ class _SignUpPageState extends State<SignUpPage> {
   String selectedRole = 'Please Select';
   final List<String> roles = ['Please Select', 'User', 'Planter'];
 
+  String? selectedProvince;
+  final List<String> provinces = [
+    'กรุงเทพฯ',
+    'ชลบุรี',
+    'เชียงใหม่',
+    'นครราชสีมา',
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,69 +79,21 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'CONFIRM PASSWORD',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: confirmPasswordController,
-                          obscureText: true,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
+              const Text(
+                'CONFIRM PASSWORD',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 12),
-                  if (selectedRole == 'Planter')
-                    Expanded(
-                      flex: 1,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'QR CODE',
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () {
-                              // TODO: implement QR upload or file picker here
-                              print('QR Code button tapped');
-                            },
-                            child: Container(
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade400),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.cloud_upload_outlined,
-                                  size: 28,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
               ),
               const SizedBox(height: 20),
               const Text(
@@ -180,12 +140,79 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
               ),
+
+              const SizedBox(height: 20),
+
+              if (selectedRole == 'Planter') ...[
+                const Text(
+                  'SELECT PROVINCE',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedProvince,
+                      isExpanded: true,
+                      hint: const Text('Please select province'),
+                      items:
+                          provinces.map((String province) {
+                            return DropdownMenuItem<String>(
+                              value: province,
+                              child: Text(
+                                province,
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            );
+                          }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedProvince = newValue!;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'QR CODE',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    // Handle QR code upload
+                  },
+                  child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade400),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.cloud_upload_outlined,
+                        size: 28,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 30),
               SizedBox(
                 height: 60,
                 child: OutlinedButton(
                   onPressed: () {
-                    // Handle registration
+                    // Handle registration logic
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.black, width: 1),

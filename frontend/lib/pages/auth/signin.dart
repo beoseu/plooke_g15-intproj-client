@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/pages/auth/signup.dart';
+import 'package:frontend/pages/user/homepage.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -63,7 +64,12 @@ class _SignInPageState extends State<SignInPage> {
               SizedBox(
                 height: 60,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomePage()),
+                    );
+                  },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.black, width: 1),
                     shape: RoundedRectangleBorder(

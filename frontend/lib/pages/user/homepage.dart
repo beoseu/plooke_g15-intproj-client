@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/pages/layout.dart';
-import 'package:frontend/components/user/place_card.dart';
+import 'package:frontend/components/user/location_card.dart';
 import 'package:frontend/pages/user/selectpage.dart';
 
 class HomePage extends StatelessWidget {
@@ -19,17 +19,60 @@ class HomePage extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
-            PlaceCard(
+
+            // LocationCard 1
+            LocationCard(
               title: 'เขาเขียว',
+              province: 'ชลบุรี',
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SelectPage()),
+                  MaterialPageRoute(
+                    builder:
+                        (context) => const SelectPage(
+                          title: 'เขาเขียว',
+                          province: 'ชลบุรี',
+                        ),
+                  ),
                 );
               },
             ),
-            PlaceCard(title: 'หีหมาดำ', onTap: () {}),
-            PlaceCard(title: 'อ่าวหาโคตรแม่มึงติ', onTap: () {}),
+
+            // LocationCard 2
+            LocationCard(
+              title: 'หาดพัทยา',
+              province: 'ชลบุรี',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => const SelectPage(
+                          title: 'หาดพัทยา',
+                          province: 'ชลบุรี',
+                        ),
+                  ),
+                );
+              },
+            ),
+
+            // LocationCard 3
+            LocationCard(
+              title: 'ภูเขาทอง',
+              province: 'กรุงเทพฯ',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => const SelectPage(
+                          title: 'ภูเขาทอง',
+                          province: 'กรุงเทพฯ',
+                        ),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
