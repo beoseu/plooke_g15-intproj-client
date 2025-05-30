@@ -1,20 +1,28 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const db = require('./database');
 const { getLocations, getLocationById } = require('./controllers/locationsControllers');
 const { getPlants, getPlantById } = require('./controllers/plantsController');
-const { getOrders, getOrderById } = require('./controllers/ordersController');
+const { getOrders, createOrder } = require('./controllers/ordersController');
 const register = require('./controllers/auth/registerController');
 const login = require('./controllers/auth/loginController');
 const logout = require('./controllers/auth/logoutController');
 const cookieParser = require('cookie-parser');
-const { authenticate, authorize } = require('./middlewares/authMiddleware');
-
+const { authenticate } = require('./middlewares/authMiddleware');
 
 const app = express();
 const PORT = 3000;
+
 app.use(cookieParser());
-app.use(cors());
+
+const corsOptions = {
+  origin: true, 
+  credentials: true, 
+  exposedHeaders: ['set-cookie'] 
+};
+app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -26,12 +34,12 @@ app.get('/', (req, res) => {
   res.send('PostgreSQL + Express API is running');
 });
 
-app.get('/locations', getLocations);
-app.get('/locations/:id', getLocationById);
-app.get('/plants', getPlants);
-app.get('/plants/:id', getPlantById);
-app.get('/orders', getOrders);
-app.get('/orders/:id', getOrderById);
+app.get('/locations', authenticate, getLocations);
+app.get('/locations/:id', authenticate, getLocationById);
+app.get('/plants', authenticate, getPlants);
+app.get('/plants/:id', authenticate, getPlantById);
+app.get('/orders', authenticate, getOrders);
+app.post('/createOrder', authenticate, createOrder);
 
 
 // Error Handling
