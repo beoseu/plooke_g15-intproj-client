@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 
 class LocationCard extends StatelessWidget {
+  final int locationId;
   final String title;
   final String province;
+  final String wildlife;
   final VoidCallback? onTap;
 
   const LocationCard({
     super.key,
+    required this.locationId,
     required this.title,
     required this.province,
+    required this.wildlife,
     this.onTap,
   });
 
@@ -42,6 +46,11 @@ class LocationCard extends StatelessWidget {
                 Text(
                   province,
                   style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Wildlife: $wildlife',
+                  style: TextStyle(fontSize: 14, color: Colors.black),
                 ),
               ],
             ),

@@ -76,9 +76,17 @@ class ApiService {
 // API endpoints
 
 Future<dynamic> getLocations() => ApiService.get('locations');
-Future<dynamic> getLocationById(String id) => ApiService.get('locations/$id');
+Future<dynamic> getLocationById(int id) => ApiService.get('locations/$id');
+Future<dynamic> getPlants() => ApiService.get('plants');
 Future<dynamic> register(Map<String, dynamic> userData) =>
     ApiService.post('register', userData);
+
+Future<void> postOrder(int locationId, int plantId) async {
+  await ApiService.post('createorder', {
+    'location_id': locationId,
+    'plant_id': plantId,
+  });
+}
 
 Future<dynamic> login(Map<String, dynamic> credentials) async {
   final result = await ApiService.post('login', credentials);
