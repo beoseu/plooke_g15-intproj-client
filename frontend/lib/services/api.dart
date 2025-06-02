@@ -59,10 +59,4 @@ Future<dynamic> getLocations() => ApiService.get('locations');
 Future<dynamic> getLocationById(String id) => ApiService.get('locations/$id');
 Future<dynamic> register(Map<String, dynamic> userData) => ApiService.post('register', userData);
 Future<dynamic> login(Map<String, dynamic> credentials) => ApiService.post('login', credentials);
-
-
-
-
-
-
-
+Future <dynamic> logout() => ApiService.post('logout', {});
