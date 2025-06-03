@@ -4,7 +4,7 @@ const cors = require('cors');
 const db = require('./database');
 const { getLocations, getLocationById } = require('./controllers/locationsControllers');
 const { getPlants, getPlantById } = require('./controllers/plantsController');
-const { getOrders, createOrder } = require('./controllers/ordersController');
+const { getOrders, createOrder, deleteOrder } = require('./controllers/ordersController');
 const register = require('./controllers/auth/registerController');
 const login = require('./controllers/auth/loginController');
 const logout = require('./controllers/auth/logoutController');
@@ -40,7 +40,7 @@ app.get('/plants', authenticate, getPlants);
 app.get('/plants/:id', authenticate, getPlantById);
 app.get('/orders', authenticate, getOrders);
 app.post('/createOrder', authenticate, createOrder);
-
+app.delete('/orders/:id', authenticate, deleteOrder);
 
 // Error Handling
 app.use((req, res) => {
