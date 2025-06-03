@@ -4,12 +4,17 @@ const cors = require('cors');
 const db = require('./database');
 const { getLocations, getLocationById } = require('./controllers/locationsControllers');
 const { getPlants, getPlantById } = require('./controllers/plantsController');
-const { getOrders, createOrder, deleteOrder } = require('./controllers/ordersController');
 const register = require('./controllers/auth/registerController');
 const login = require('./controllers/auth/loginController');
 const logout = require('./controllers/auth/logoutController');
 const cookieParser = require('cookie-parser');
-const { authenticate } = require('./middlewares/authMiddleware');
+const { authenticate, authorize } = require('./middlewares/authMiddleware');
+const getOrderById = require('./controllers/order/getOrderById');
+const createOrder = require('./controllers/order/createOrder');
+const updateOrder = require('./controllers/order/updateOrder');
+const confirmOrder = require('./controllers/order/confirmOrder');
+const deleteOrder = require('./controllers/order/deleteOrder');
+const getOrders = require('./controllers/order/getOrders');
 
 const app = express();
 const PORT = 3000;
@@ -34,13 +39,21 @@ app.get('/', (req, res) => {
   res.send('PostgreSQL + Express API is running');
 });
 
+// Locations
 app.get('/locations', authenticate, getLocations);
 app.get('/locations/:id', authenticate, getLocationById);
+
+// Plants
 app.get('/plants', authenticate, getPlants);
 app.get('/plants/:id', authenticate, getPlantById);
+
+// Orders
 app.get('/orders', authenticate, getOrders);
-app.post('/createOrder', authenticate, createOrder);
-app.delete('/orders/:id', authenticate, deleteOrder);
+app.get('/orders/:id', authenticate, getOrderById);
+app.post('/orders/create', authenticate, authorize('user'), createOrder);
+app.post('/orders/update', authenticate, authorize('user'), updateOrder); // change status to 'inprogress'
+app.post('/orders/confirm', authenticate, authorize('planter'), confirmOrder); // change status to 'completed'
+app.delete('/orders/delete/:id', authenticate, deleteOrder);
 
 // Error Handling
 app.use((req, res) => {
