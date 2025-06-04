@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/pages/layout.dart';
 import 'package:frontend/pages/user/sumpage.dart';
+import 'package:frontend/services/api.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class PayPage extends StatefulWidget {
   final String plantName;
   final int price;
   final String locationTitle;
   final String locationProvince;
+  final int orderId; // <-- Add orderId to constructor
 
   const PayPage({
     super.key,
@@ -14,6 +18,7 @@ class PayPage extends StatefulWidget {
     required this.price,
     required this.locationTitle,
     required this.locationProvince,
+    required this.orderId, // <-- Add orderId to constructor
   });
 
   @override
@@ -22,6 +27,22 @@ class PayPage extends StatefulWidget {
 
 class _PayPageState extends State<PayPage> {
   String? fileName;
+
+  Future<void> confirmPayment() async {
+    final orderId = widget.orderId;
+    final response = await postConfirmPayment(orderId, fileName ?? "receipt_image.jpg");
+    if (!mounted) return; // <-- Guard context after async gap
+    if (response['status'] == 'success') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SumPage()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment failed')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +87,6 @@ class _PayPageState extends State<PayPage> {
               // Upload button
               GestureDetector(
                 onTap: () {
-                  // Simulate file selection
                   setState(() {
                     fileName = 'receipt_image.jpg';
                   });
@@ -95,16 +115,9 @@ class _PayPageState extends State<PayPage> {
               const SizedBox(height: 12),
 
               ElevatedButton(
-                onPressed:
-                    fileName != null
-                        ? () {
-                          // Navigate to summary page
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => SumPage()),
-                          );
-                        }
-                        : null,
+                onPressed: fileName != null
+                    ? confirmPayment
+                    : null,
                 style: OutlinedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
@@ -125,4 +138,6 @@ class _PayPageState extends State<PayPage> {
       ),
     );
   }
+
+
 }

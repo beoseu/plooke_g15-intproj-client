@@ -15,7 +15,7 @@ class SelectPage extends StatefulWidget {
 
 class _SelectPageState extends State<SelectPage> {
   String? selectedPlantName;
-  Map<String, int> plantMap = {}; // name -> price
+  Map<String, Map<String, dynamic>> plantMap = {}; // name -> {id, price}
   Map<String, dynamic>? locationData;
 
   bool isLoadingPlants = true;
@@ -34,7 +34,13 @@ class _SelectPageState extends State<SelectPage> {
       final List data = result['data'] ?? [];
 
       setState(() {
-        plantMap = {for (var plant in data) plant['name']: plant['price']};
+        plantMap = {
+          for (var plant in data)
+            plant['name']: {
+              'id': plant['id'],
+              'price': plant['price'],
+            }
+        };
         isLoadingPlants = false;
       });
     } catch (e) {
@@ -56,10 +62,18 @@ class _SelectPageState extends State<SelectPage> {
     }
   }
 
+  Future<dynamic> postOrder(int locationId, int plantId) async {
+    return await ApiService.post('orders/create', {
+      'location_id': locationId,
+      'plant_id': plantId,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final int totalPrice =
-        selectedPlantName != null ? plantMap[selectedPlantName] ?? 0 : 0;
+    final int totalPrice = (selectedPlantName != null && plantMap[selectedPlantName] != null)
+        ? (plantMap[selectedPlantName]!['price'] ?? 0)
+        : 0;
 
     return Layout(
       child: Padding(
@@ -70,13 +84,13 @@ class _SelectPageState extends State<SelectPage> {
             isLoadingLocation
                 ? const Center(child: CircularProgressIndicator())
                 : LocationCard(
-                  locationId: widget.locationId,
-                  title: locationData?['name'] ?? 'Unknown',
-                  province: locationData?['province'] ?? 'Unknown',
-                  wildlife:
-                      'Wildlife: ${locationData?['wildlife'] ?? 'Unknown'}',
-                  onTap: () {},
-                ),
+                    locationId: widget.locationId,
+                    title: locationData?['name'] ?? 'Unknown',
+                    province: locationData?['province'] ?? 'Unknown',
+                    wildlife:
+                        'Wildlife: ${locationData?['wildlife'] ?? 'Unknown'}',
+                    onTap: () {},
+                  ),
             const SizedBox(height: 24),
             const Center(
               child: Text(
@@ -89,43 +103,42 @@ class _SelectPageState extends State<SelectPage> {
               ),
             ),
             const SizedBox(height: 16),
-
             isLoadingPlants
                 ? const Center(child: CircularProgressIndicator())
                 : Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.white,
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      hint: const Text('PLEASE SELECT'),
-                      value: selectedPlantName,
-                      isExpanded: true,
-                      items:
-                          plantMap.entries.map((entry) {
-                            return DropdownMenuItem<String>(
-                              value: entry.key,
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.local_florist_rounded),
-                                  const SizedBox(width: 8),
-                                  Text('${entry.key} (${entry.value} ฿)'),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          selectedPlantName = newValue;
-                        });
-                      },
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white,
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        hint: const Text('PLEASE SELECT'),
+                        value: selectedPlantName,
+                        isExpanded: true,
+                        items: plantMap.entries.map((entry) {
+                          final name = entry.key;
+                          final price = entry.value['price'];
+                          return DropdownMenuItem<String>(
+                            value: name,
+                            child: Row(
+                              children: [
+                                const Icon(Icons.local_florist_rounded),
+                                const SizedBox(width: 8),
+                                Text('$name ($price ฿)'),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedPlantName = newValue;
+                          });
+                        },
+                      ),
                     ),
                   ),
-                ),
-
             const Spacer(),
             Text(
               'Total: $totalPrice Bath',
@@ -134,33 +147,42 @@ class _SelectPageState extends State<SelectPage> {
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed:
-                  selectedPlantName == null
-                      ? null
-                      : () async {
-                        final selectedPrice = plantMap[selectedPlantName]!;
-                        try {
-                          await postOrder(widget.locationId, selectedPrice);
+              onPressed: selectedPlantName == null
+                  ? null
+                  : () async {
+                      final selected = plantMap[selectedPlantName]!;
+                      final plantId = selected['id'];
+                      final price = selected['price'];
 
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => PayPage(
-                                    plantName: selectedPlantName!,
-                                    price: selectedPrice,
-                                    locationTitle: locationData?['name'] ?? '',
-                                    locationProvince:
-                                        locationData?['province'] ?? '',
-                                  ),
-                            ),
-                          );
-                        } catch (e) {
+                      try {
+                        final response = await postOrder(widget.locationId, plantId);
+                        final orderId = response['data']?['order']?['id'];
+
+                        if (orderId == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Order failed: $e')),
+                            const SnackBar(content: Text('Order creation failed: No order id')),
                           );
+                          return;
                         }
-                      },
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PayPage(
+                              plantName: selectedPlantName!,
+                              price: price,
+                              locationTitle: locationData?['name'] ?? '',
+                              locationProvince: locationData?['province'] ?? '',
+                              orderId: orderId,
+                            ),
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Order failed: $e')),
+                        );
+                      }
+                    },
               style: OutlinedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,

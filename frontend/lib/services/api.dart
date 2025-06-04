@@ -17,6 +17,14 @@ class ApiService {
     _accessToken = null;
   }
 
+  static Map<String, String> getHeaders() {
+    final headers = {'Content-Type': 'application/json'};
+    if (_accessToken != null) {
+      headers['Authorization'] = 'Bearer $_accessToken';
+    }
+    return headers;
+  }
+
   // GET method
   static Future<dynamic> get(String endpoint) async {
     try {
@@ -78,11 +86,12 @@ class ApiService {
 Future<dynamic> getLocations() => ApiService.get('locations');
 Future<dynamic> getLocationById(int id) => ApiService.get('locations/$id');
 Future<dynamic> getPlants() => ApiService.get('plants');
+Future<dynamic> getOrders() => ApiService.get('orders');
 Future<dynamic> register(Map<String, dynamic> userData) =>
     ApiService.post('register', userData);
 
 Future<void> postOrder(int locationId, int plantId) async {
-  await ApiService.post('createorder', {
+  await ApiService.post('orders/create', {
     'location_id': locationId,
     'plant_id': plantId,
   });
@@ -90,14 +99,9 @@ Future<void> postOrder(int locationId, int plantId) async {
 
 Future<dynamic> login(Map<String, dynamic> credentials) async {
   final result = await ApiService.post('login', credentials);
-
   if (result != null && result['accessToken'] != null) {
     ApiService.setAccessToken(result['accessToken']);
-    print('AccessToken: ${result['accessToken']}'); // เช็ค token
-  } else {
-    print('No access token received');
   }
-
   return result;
 }
 
@@ -105,4 +109,26 @@ Future<dynamic> logout() async {
   final result = await ApiService.post('logout', {});
   ApiService.clearAccessToken(); // ล้าง token ตอน logout
   return result;
+}
+
+Future<dynamic> postOrderConfirm(int orderId, String plantedImg) {
+  return ApiService.post('orders/confirm', {
+    'order_id': orderId,
+    'planted_img': plantedImg,
+  });
+}
+
+Future<dynamic> postConfirmPayment(int orderId, String receiptImg) {
+  return ApiService.post('orders/update', {
+    'order_id': orderId,
+    "receipt_img": receiptImg
+  });
+}
+
+Future<dynamic> deleteOrder(int orderId) async {
+  final response = await ApiService._client.delete(
+    Uri.parse('${ApiService._baseUrl}/orders/$orderId'),
+    headers: ApiService.getHeaders(),
+  );
+  return jsonDecode(response.body);
 }
