@@ -4,7 +4,8 @@ const { JWT_SECRET } = process.env;
 
 const authenticate = (req, res, next) => {
   try {
-    const accessToken = req.cookies.accessToken;
+    const authHeader = req.headers['authorization'];
+    const accessToken = authHeader && authHeader.split(' ')[1];
 
     if (!accessToken) {
       return res.status(401).json({
