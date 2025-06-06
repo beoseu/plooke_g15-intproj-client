@@ -99,9 +99,10 @@ Future<void> postOrder(int locationId, int plantId) async {
 
 Future<dynamic> login(Map<String, dynamic> credentials) async {
   final result = await ApiService.post('login', credentials);
-  if (result != null && result['accessToken'] != null) {
-    ApiService.setAccessToken(result['accessToken']);
+  if (result != null && result['data']?['tokens']?['access_token'] != null) {
+    ApiService.setAccessToken(result['data']['tokens']['access_token']);
   }
+
   return result;
 }
 
@@ -121,7 +122,7 @@ Future<dynamic> postOrderConfirm(int orderId, String plantedImg) {
 Future<dynamic> postConfirmPayment(int orderId, String receiptImg) {
   return ApiService.post('orders/update', {
     'order_id': orderId,
-    "receipt_img": receiptImg
+    "receipt_img": receiptImg,
   });
 }
 
