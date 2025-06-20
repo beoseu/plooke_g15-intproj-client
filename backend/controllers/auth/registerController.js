@@ -1,276 +1,51 @@
-// const bcrypt = require('bcryptjs');
-// const jwt = require('jsonwebtoken');
-// const db = require('../../database');
-// const { v4: uuidv4 } = require('uuid');
-// const { 
-//   JWT_SECRET, 
-//   ACCESS_TOKEN_EXPIRES_IN = '15m',
-//   REFRESH_TOKEN_EXPIRES_IN = '7d'
-// } = process.env;
+const { createClient } = require('@supabase/supabase-js');
+const db = require('../../database');  // ปรับ path ตามโปรเจกต์
 
-// async function register(req, res) {
-//   try {
-//     const { email, password, role } = req.body;
-//     let { province, qrcode } = req.body;
-    
-//     // Validate basic input
-//     if (!email || !password || !role) {
-//       return res.status(400).json({
-//         status: 'error',
-//         message: 'Email, password and role are required'
-//       });
-//     }
-
-//     // Validate role-specific fields
-//     if (role === 'planter') {
-//       if (!province) {  //(!province || !qrcode)
-//         return res.status(400).json({
-//           status: 'error',
-//           message: 'Province and qrcode are required for planter role'
-//         });
-//       }
-//     } else {
-//       // Clear planter-specific fields for non-planter roles
-//       province = null;
-//       qrcode = null;
-//     }
-
-//     // Check if user exists
-//     const { rows: existingUsers } = await db.query(
-//       'SELECT id FROM users WHERE email = $1', 
-//       [email]
-//     );
-    
-//     if (existingUsers.length > 0) {
-//       return res.status(409).json({
-//         status: 'error',
-//         message: 'Email already registered'
-//       });
-//     }
-
-//     // Hash password and generate ID
-//     const hashedPassword = await bcrypt.hash(password, 12);
-//     const id = uuidv4();
-
-//     // Generate tokens
-//     const accessToken = jwt.sign(
-//       { id, email, role, province },
-//       JWT_SECRET,
-//       { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
-//     );
-
-//     const refreshToken = jwt.sign(
-//       { id, email, role, province },
-//       JWT_SECRET,
-//       { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
-//     );
-
-//     // Create user in database
-//     const { rows: [newUser] } = await db.query(
-//       `INSERT INTO users 
-//        (id, email, password, role, province, qrcode, refresh_token) 
-//        VALUES ($1, $2, $3, $4, $5, $6, $7) 
-//        RETURNING id, email, role, province, qrcode, created_at`,
-//       [id, email, hashedPassword, role, province, qrcode, refreshToken]
-//     );
-
-//     // Set secure cookies
-//     const cookieOptions = {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === 'production',
-//       sameSite: 'strict'
-//     };
-
-//     res.cookie('accessToken', accessToken, {
-//       ...cookieOptions,
-//       maxAge: 15 * 60 * 1000 // 15 minutes
-//     });
-
-//     res.cookie('refreshToken', refreshToken, {
-//       ...cookieOptions,
-//       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-//     });
-
-//     // Prepare response data
-//     const responseData = {
-//       status: 'success',
-//       data: {
-//         user: {
-//           id: newUser.id,
-//           email: newUser.email,
-//           role: newUser.role,
-//           created_at: newUser.created_at
-//         },
-//         tokens: {
-//           access_token: accessToken,
-//           expires_in: ACCESS_TOKEN_EXPIRES_IN
-//         }
-//       }
-//     };
-
-//     // Add planter-specific fields if role is planter
-//     if (role === 'planter') {
-//       responseData.data.user.province = newUser.province;
-//       responseData.data.user.qrcode = newUser.qrcode;
-//     }
-
-//     res.status(201).json(responseData);
-
-//   } catch (err) {
-//     console.error('Registration error:', err);
-    
-//     // Handle specific errors
-//     if (err.code === '23505') { // Unique violation
-//       return res.status(409).json({
-//         status: 'error',
-//         message: 'Email already registered'
-//       });
-//     }
-
-//     res.status(500).json({
-//       status: 'error',
-//       message: 'Internal server error during registration'
-//     });
-//   }
-// }
-
-// module.exports = register;
-
-
-
-
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const db = require('../../database');
-const { v4: uuidv4 } = require('uuid');
-
-const {
-  JWT_SECRET,
-  ACCESS_TOKEN_EXPIRES_IN = '15m',
-  REFRESH_TOKEN_EXPIRES_IN = '7d'
-} = process.env;
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 async function register(req, res) {
+  const { email, password, role, province, qrcode } = req.body;
+
+  if (!email || !password || !role) {
+    return res.status(400).json({ status: 'error', message: 'Missing fields' });
+  }
+
+  // สร้าง user ใน Supabase Auth และข้ามการยืนยันอีเมล
+  const { data, error } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true, // ข้ามการยืนยันอีเมล
+    user_metadata: {
+      role,
+      province,
+      qrcode
+    }
+  });
+
+  if (error) {
+    console.error('Supabase registration error:', error);
+    return res.status(500).json({ status: 'error', message: error.message });
+  }
+
   try {
-    const { email, password, role } = req.body;
-    let { province, qrcode } = req.body;
+    // นำ supabase_uid, email, role, province, qrcode ไปเก็บในตาราง users
+    const supabaseUid = data.user.id;  // Supabase UID
 
-    // Validate basic input
-    if (!email || !password || !role) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Email, password and role are required'
-      });
-    }
+    const queryText = `
+      INSERT INTO users (supabase_uid, email, role, province, qrcode)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `;
+    const values = [supabaseUid, email, role, province || null, qrcode || null];
+    const { rows } = await db.query(queryText, values);
 
-    // Validate role-specific fields
-    if (role === 'planter') {
-      if (!province) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Province and qrcode are required for planter role'
-        });
-      }
-    } else {
-      province = null;
-      qrcode = null;
-    }
-
-    // Check if user already exists
-    const { rows: existingUsers } = await db.query(
-      'SELECT uuid FROM users WHERE email = $1',
-      [email]
-    );
-
-    if (existingUsers.length > 0) {
-      return res.status(409).json({
-        status: 'error',
-        message: 'Email already registered'
-      });
-    }
-
-    // Hash password and generate UUID
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const uuid = uuidv4();
-
-    // Generate tokens
-    const accessToken = jwt.sign(
-      { uuid, email, role, province },
-      JWT_SECRET,
-      { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
-    );
-
-    const refreshToken = jwt.sign(
-      { uuid, email, role, province },
-      JWT_SECRET,
-      { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
-    );
-
-    // Insert new user into database
-    const { rows: [newUser] } = await db.query(
-      `INSERT INTO users 
-       (uuid, email, password, role, province, qrcode, refresh_token) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-       RETURNING uuid, id, email, role, province, qrcode, created_at`,
-      [uuid, email, hashedPassword, role, province, qrcode, refreshToken]
-    );
-
-    // Set secure cookies
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
-    };
-
-    res.cookie('accessToken', accessToken, {
-      ...cookieOptions,
-      maxAge: 15 * 60 * 1000
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
-    // Prepare and send response
-    const responseData = {
-      status: 'success',
-      data: {
-        user: {
-          uuid: newUser.uuid,
-          id: newUser.id,
-          email: newUser.email,
-          role: newUser.role,
-          created_at: newUser.created_at
-        },
-        tokens: {
-          access_token: accessToken,
-          expires_in: ACCESS_TOKEN_EXPIRES_IN
-        }
-      }
-    };
-
-    if (role === 'planter') {
-      responseData.data.user.province = newUser.province;
-      responseData.data.user.qrcode = newUser.qrcode;
-    }
-
-    res.status(201).json(responseData);
-
-  } catch (err) {
-    console.error('Registration error:', err);
-
-    if (err.code === '23505') {
-      return res.status(409).json({
-        status: 'error',
-        message: 'Email already registered'
-      });
-    }
-
-    res.status(500).json({
-      status: 'error',
-      message: 'Internal server error during registration'
-    });
+    res.status(201).json({ status: 'success', data: rows[0] });
+  } catch (dbError) {
+    console.error('DB insert error:', dbError);
+    return res.status(500).json({ status: 'error', message: 'Failed to save user data in DB' });
   }
 }
 

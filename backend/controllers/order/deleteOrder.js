@@ -1,13 +1,14 @@
 const db = require("../../database");
 
 async function deleteOrder(req, res) {
-  const user_uuid = req.user.uuid;
+  const user_supabase_uid = req.user.supabase_uid;  // เปลี่ยนเป็น supabase_uid
   const order_id = req.params.id;
 
   try {
+    // หา user.id จาก supabase_uid
     const { rows: userRows } = await db.query(
-      `SELECT id FROM users WHERE uuid = $1`,
-      [user_uuid]
+      `SELECT id FROM users WHERE supabase_uid = $1`,
+      [user_supabase_uid]
     );
 
     if (userRows.length === 0) {
@@ -19,6 +20,7 @@ async function deleteOrder(req, res) {
 
     const user_id = userRows[0].id;
 
+    // ตรวจสอบว่า order มีอยู่และเป็นของ user นี้จริง
     const { rows: orderRows } = await db.query(
       `SELECT * FROM orders WHERE id = $1 AND user_id = $2`,
       [order_id, user_id]
@@ -31,7 +33,7 @@ async function deleteOrder(req, res) {
       });
     }
 
-    // Delete the order
+    // ลบ order
     await db.query(
       `DELETE FROM orders WHERE id = $1 AND user_id = $2`,
       [order_id, user_id]

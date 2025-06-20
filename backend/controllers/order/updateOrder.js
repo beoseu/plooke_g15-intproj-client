@@ -1,7 +1,7 @@
 const db = require("../../database");
 
 async function updateOrder(req, res) {
-  const { uuid } = req.user;
+  const supabase_uid = req.user.supabase_uid;  // แก้ตรงนี้
   const { order_id, receipt_img } = req.body;
 
   if (!order_id || !receipt_img) {
@@ -20,8 +20,8 @@ async function updateOrder(req, res) {
       `SELECT o.status 
        FROM orders o
        JOIN users u ON o.user_id = u.id
-       WHERE o.id = $1 AND u.uuid = $2`,
-      [order_id, uuid]
+       WHERE o.id = $1 AND u.supabase_uid = $2`,  // แก้จาก uuid เป็น supabase_uid
+      [order_id, supabase_uid]
     );
 
     if (!order) {
@@ -59,7 +59,6 @@ async function updateOrder(req, res) {
   } catch (err) {
     console.error("Error uploading payment receipt:", err);
     
-    // Handle specific database errors
     if (err.code === '22P02') { 
       return res.status(400).json({
         status: "error",

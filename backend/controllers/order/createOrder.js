@@ -2,7 +2,7 @@ const db = require("../../database");
 
 async function createOrder(req, res) {
   const { location_id, plant_id } = req.body;
-  const user_uuid = req.user.uuid;
+  const user_supabase_uid = req.user.supabase_uid;  // เปลี่ยนเป็น supabase_uid
 
   if (!location_id || !plant_id) {
     return res.status(400).json({
@@ -14,10 +14,19 @@ async function createOrder(req, res) {
   try {
     await db.query("BEGIN");
 
+    // ใช้ supabase_uid แทน uuid
     const { rows: userRows } = await db.query(
-      `SELECT id, email FROM users WHERE uuid = $1`,
-      [user_uuid]
+      `SELECT id, email FROM users WHERE supabase_uid = $1`,
+      [user_supabase_uid]
     );
+
+    if (userRows.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
 
     const { rows: locationRows } = await db.query(
       `SELECT * FROM locations WHERE id = $1`,
@@ -73,10 +82,10 @@ async function createOrder(req, res) {
         order: orderRows[0],
         location: locationRows[0],
         plant: plantRows[0],
-        user_uuid: userRows[0]?.id,
-        user_email: userRows[0]?.email,
-        planter_id: planterRows[0]?.id,
-        planter_email: planterRows[0]?.email,
+        user_supabase_uid: user_supabase_uid,
+        user_email: userRows[0].email,
+        planter_id: planterRows[0].id,
+        planter_email: planterRows[0].email,
       },
     });
   } catch (err) {

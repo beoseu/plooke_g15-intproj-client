@@ -11,6 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'PLOOKE',
       theme: ThemeData(scaffoldBackgroundColor: Color(0xFFF7F7F7)),
       home: Scaffold(body: SignInPage()),
     );

@@ -2,10 +2,13 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ApiService {
-  static const String _baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'https://g15intproj-server-production.up.railway.app';
 
   static final _client = http.Client();
   static String? _accessToken; // เก็บ token ที่ได้จาก login
+
+  // Getter สำหรับ debug หรือเข้าถึง token จากภายนอก
+  static String? get accessToken => _accessToken;
 
   // Set token (เรียกหลัง login สำเร็จ)
   static void setAccessToken(String token) {
@@ -83,12 +86,34 @@ class ApiService {
 
 // API endpoints
 
-Future<dynamic> getLocations() => ApiService.get('locations');
-Future<dynamic> getLocationById(int id) => ApiService.get('locations/$id');
-Future<dynamic> getPlants() => ApiService.get('plants');
-Future<dynamic> getOrders() => ApiService.get('orders');
-Future<dynamic> register(Map<String, dynamic> userData) =>
-    ApiService.post('register', userData);
+Future<dynamic> getLocations() {
+  print('Token: ${ApiService.accessToken}');
+  return ApiService.get('locations');
+}
+Future<dynamic> getLocationById(int id) {
+  print('Token: ${ApiService.accessToken}');
+  return ApiService.get('locations/$id');
+}
+Future<dynamic> getPlants() {
+  print('Token: ${ApiService.accessToken}');
+  return ApiService.get('plants');
+}
+Future<dynamic> getOrders() {
+  print('Token: ${ApiService.accessToken}');
+  return ApiService.get('orders');
+}
+Future<dynamic> register(Map<String, dynamic> userData) async {
+  final result = await ApiService.post('register', userData);
+  if (result != null &&
+      result['data'] != null &&
+      result['data']['tokens'] != null &&
+      result['data']['tokens']['access_token'] != null) {
+    final token = result['data']['tokens']['access_token'];
+    ApiService.setAccessToken(token);
+    print('Token saved after register: $token');
+  }
+  return result;
+}
 
 Future<void> postOrder(int locationId, int plantId) async {
   await ApiService.post('orders/create', {
@@ -99,15 +124,23 @@ Future<void> postOrder(int locationId, int plantId) async {
 
 Future<dynamic> login(Map<String, dynamic> credentials) async {
   final result = await ApiService.post('login', credentials);
-  if (result != null && result['accessToken'] != null) {
-    ApiService.setAccessToken(result['accessToken']);
+  if (result != null &&
+      result['data'] != null &&
+      result['data']['tokens'] != null &&
+      result['data']['tokens']['access_token'] != null) {
+    final token = result['data']['tokens']['access_token'];
+    ApiService.setAccessToken(token);
+    print('Token saved: $token');  // สำหรับ debug
   }
   return result;
 }
 
 Future<dynamic> logout() async {
   final result = await ApiService.post('logout', {});
-  ApiService.clearAccessToken(); // ล้าง token ตอน logout
+  if (result != null) {
+    ApiService.clearAccessToken();
+    print('Token cleared after logout');
+  }
   return result;
 }
 

@@ -1,8 +1,12 @@
 require('dotenv').config();
-const jwt = require('jsonwebtoken');
-const { JWT_SECRET } = process.env;
+const { createClient } = require('@supabase/supabase-js');
 
-const authenticate = (req, res, next) => {
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+const authenticate = async (req, res, next) => {
   try {
     const accessToken = req.cookies.accessToken;
 
@@ -14,49 +18,31 @@ const authenticate = (req, res, next) => {
       });
     }
 
-    jwt.verify(accessToken, JWT_SECRET, (err, decoded) => {
-      if (err) {
-        console.error('Token verification error:', {
-          error: err.name,
-          message: err.message,
-          timestamp: new Date().toISOString()
-        });
+    // Verify token ผ่าน Supabase Auth
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
 
-        const errorResponse = {
-          status: 'error',
-          timestamp: new Date().toISOString()
-        };
+    if (error || !user) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Invalid or expired access token',
+        solution: 'Please login again'
+      });
+    }
 
-        if (err.name === 'TokenExpiredError') {
-          errorResponse.message = 'Access token expired';
-          errorResponse.solution = 'Refresh your token or login again';
-          res.clearCookie('accessToken');
-          return res.status(401).json(errorResponse);
-        }
+    // กรณีอยากดึงข้อมูล user เพิ่มเติมจาก DB คุณ (ถ้ามี)
+    // const { rows } = await db.query('SELECT * FROM users WHERE supabase_uid = $1', [user.id]);
+    // const localUser = rows.length > 0 ? rows[0] : null;
 
-        errorResponse.message = 'Invalid token';
-        errorResponse.solution = 'Please login again';
-        return res.status(403).json(errorResponse);
-      }
+    req.user = {
+      supabase_uid: user.id,
+      email: user.email,
+      // role: localUser?.role || user.user_metadata?.role, // ถ้าเก็บ role ใน DB หรือ metadata
+      // province: localUser?.province || user.user_metadata?.province,
+      // ... หรือจะเพิ่มข้อมูลอื่น ๆ ตามต้องการ
+    };
 
-      // ✅ Use uuid instead of id
-      if (!decoded.uuid) {
-        return res.status(403).json({
-          status: 'error',
-          message: 'Token missing required user data',
-          solution: 'Please login again'
-        });
-      }
+    next();
 
-      req.user = {
-        uuid: decoded.uuid,
-        email: decoded.email,
-        role: decoded.role,
-        ...(decoded.province && { province: decoded.province })
-      };
-
-      next();
-    });
   } catch (error) {
     console.error('Authentication middleware error:', error);
     res.status(500).json({
@@ -66,7 +52,7 @@ const authenticate = (req, res, next) => {
   }
 };
 
-// Authorization middleware stays the same
+// Authorization middleware เดิมยังใช้ได้เหมือนเดิม
 const authorize = (roles = []) => {
   if (typeof roles === 'string') roles = [roles];
 
@@ -90,3 +76,4 @@ const authorize = (roles = []) => {
 };
 
 module.exports = { authenticate, authorize };
+

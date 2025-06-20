@@ -1,12 +1,13 @@
 const db = require("../../database");
 
 async function getOrders(req, res) {
-  const { uuid, role } = req.user;
+  const { supabase_uid, role } = req.user;  // เปลี่ยนจาก uuid เป็น supabase_uid
 
   try {
+    // หา user.id จาก supabase_uid
     const { rows: userRows } = await db.query(
-      `SELECT id FROM users WHERE uuid = $1`,
-      [uuid]
+      `SELECT id FROM users WHERE supabase_uid = $1`,
+      [supabase_uid]
     );
 
     if (userRows.length === 0) {
@@ -21,7 +22,7 @@ async function getOrders(req, res) {
     let queryParams;
 
     if (role === "planter") {
-      // For planters, get all orders assigned to them
+      // สำหรับ planter ดึง order ที่ assign ให้ planter_id = userId และ status != 'unpaid'
       ordersQuery = `
         SELECT 
           o.id, 
@@ -38,7 +39,7 @@ async function getOrders(req, res) {
       `;
       queryParams = [userId];
     } else {
-      // For regular users, get their own orders
+      // สำหรับ user ปกติ ดึง order ของ user เอง
       ordersQuery = `
         SELECT 
           o.id, 
@@ -66,10 +67,9 @@ async function getOrders(req, res) {
       });
     }
 
-    // Determine which related data we need to fetch based on role
+    // ดึงข้อมูล user (planter หรือ user ขึ้นกับ role) และ location, plant
     let relatedDataQueries;
     if (role === "planter") {
-      // For planters, we need user info (who created the order)
       relatedDataQueries = [
         db.query(`SELECT id, email FROM users WHERE id = ANY($1::int[])`, [
           orders.map((o) => o.user_id).filter(Boolean),
@@ -83,7 +83,6 @@ async function getOrders(req, res) {
         ]),
       ];
     } else {
-      // For regular users, we need planter info
       relatedDataQueries = [
         db.query(`SELECT id, email FROM users WHERE id = ANY($1::int[])`, [
           orders.map((o) => o.planter_id).filter(Boolean),
@@ -98,16 +97,14 @@ async function getOrders(req, res) {
       ];
     }
 
-    const [relatedUsers, locations, plants] = await Promise.all(
-      relatedDataQueries
-    );
+    const [relatedUsers, locations, plants] = await Promise.all(relatedDataQueries);
 
-    // Create lookup maps
+    // สร้าง map lookup
     const userMap = new Map(relatedUsers.rows.map((u) => [u.id, u]));
     const locationMap = new Map(locations.rows.map((l) => [l.id, l]));
     const plantMap = new Map(plants.rows.map((p) => [p.id, p]));
 
-    // Construct response data based on role
+    // สร้าง response data
     const responseData = orders.map((order) => {
       const baseData = {
         id: order.id,

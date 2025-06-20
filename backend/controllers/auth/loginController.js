@@ -1,106 +1,7 @@
-// const jwt = require("jsonwebtoken");
-// const bcrypt = require("bcryptjs");
-// const db = require("../../database");
-// const { JWT_SECRET } = process.env;
+const { createClient } = require('@supabase/supabase-js');
+const db = require('../../database');
 
-// async function login(req, res) {
-//   try {
-//     const { email, password } = req.body;
-
-//     if (!email || !password) {
-//       return res.status(400).json({
-//         status: "error",
-//         message: "Email and password are required",
-//       });
-//     }
-
-//     const { rows } = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-//     if (rows.length === 0) {
-//       return res.status(401).json({
-//         status: "error",
-//         message: "Invalid email or password",
-//       });
-//     }
-
-//     const user = rows[0];
-//     const isPasswordValid = await bcrypt.compare(password, user.password);
-//     if (!isPasswordValid) {
-//       return res.status(401).json({
-//         status: "error",
-//         message: "Invalid email or password",
-//       });
-//     }
-
-//     // Create tokens
-//     const accessToken = jwt.sign(
-//       { uuid: user.uuid, email: user.email, role: user.role },
-//       JWT_SECRET,
-//       { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || "15m" }
-//     );
-
-//     const refreshToken = jwt.sign(
-//       { uuid: user.uuid },
-//       JWT_SECRET,
-//       { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d" }
-//     );
-
-//     // Update refresh token in DB
-//     await db.query("UPDATE users SET refresh_token = $1 WHERE uuid = $2", [
-//       refreshToken,
-//       user.uuid,
-//     ]);
-
-//     // Set cookies
-//     res.cookie("accessToken", accessToken, {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === "production",
-//       sameSite: "strict",
-//       maxAge: 15 * 60 * 1000 // 15 minutes
-//     });
-
-//     res.cookie("refreshToken", refreshToken, {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === "production",
-//       sameSite: "strict",
-//       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-//     });
-
-//     res.json({
-//       status: "success",
-//       accessToken,
-//       refreshToken,
-//       JWT_SECRET,
-//       data: {
-//         user: {
-//           uuid: user.uuid,
-//           id: user.id,
-//           email: user.email,
-//           role: user.role,
-//         },
-//       },
-//     });
-
-//   } catch (err) {
-//     console.error("Login error:", err);
-//     res.status(500).json({
-//       status: "error",
-//       message: "Failed to login",
-//     });
-//   }
-// }
-
-// module.exports = login;
-
-
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-const db = require("../../database");
-
-const {
-  JWT_SECRET,
-  ACCESS_TOKEN_EXPIRES_IN = "15m",
-  REFRESH_TOKEN_EXPIRES_IN = "7d"
-} = process.env;
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 async function login(req, res) {
   try {
@@ -113,74 +14,67 @@ async function login(req, res) {
       });
     }
 
-    const { rows } = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+    // Login with Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Invalid email or password',
+        detail: error.message
+      });
+    }
+
+    const { user, session } = data;
+
+    // Query local DB by supabase_uid
+    const { rows } = await db.query('SELECT * FROM users WHERE supabase_uid = $1', [user.id]);
+
     if (rows.length === 0) {
-      return res.status(401).json({
-        status: "error",
-        message: "Invalid email or password"
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found in local DB'
       });
     }
 
-    const user = rows[0];
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        status: "error",
-        message: "Invalid email or password"
-      });
-    }
-
-    // Generate tokens
-    const accessToken = jwt.sign(
-      { uuid: user.uuid, email: user.email, role: user.role },
-      JWT_SECRET,
-      { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
-    );
-
-    const refreshToken = jwt.sign(
-      { uuid: user.uuid },
-      JWT_SECRET,
-      { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
-    );
-
-    // Save refresh token in database
-    await db.query("UPDATE users SET refresh_token = $1 WHERE uuid = $2", [
-      refreshToken,
-      user.uuid
-    ]);
+    const localUser = rows[0];
 
     // Set cookies
     const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict"
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
     };
 
-    res.cookie("accessToken", accessToken, {
+    res.cookie('accessToken', session.access_token, {
       ...cookieOptions,
       maxAge: 15 * 60 * 1000
     });
 
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie('refreshToken', session.refresh_token, {
       ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    // Send response
+    // Response
     res.json({
-      status: "success",
+      status: 'success',
       data: {
         user: {
-          uuid: user.uuid,
-          id: user.id,
+          supabase_uid: user.id,
+          id: localUser.id,
           email: user.email,
-          role: user.role
+          role: localUser.role,
+          province: localUser.province,
+          qrcode: localUser.qrcode
         },
         tokens: {
-          access_token: accessToken,
-          refresh_token: refreshToken,
-          expires_in: ACCESS_TOKEN_EXPIRES_IN
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          expires_in: session.expires_in
         }
       }
     });
@@ -189,7 +83,7 @@ async function login(req, res) {
     console.error("Login error:", err);
     res.status(500).json({
       status: "error",
-      message: "Failed to login"
+      message: "Internal server error during login"
     });
   }
 }

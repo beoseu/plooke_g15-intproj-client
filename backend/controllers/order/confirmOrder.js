@@ -1,7 +1,7 @@
 const db = require("../../database");
 
 async function confirmOrder(req, res) {
-  const { uuid } = req.user;
+  const { supabase_uid } = req.user;  // เปลี่ยนจาก uuid เป็น supabase_uid
   const { order_id, planted_img } = req.body;
 
   if (!order_id || !planted_img) {
@@ -15,8 +15,8 @@ async function confirmOrder(req, res) {
     const { rows: [order] } = await db.query(
       `SELECT status FROM orders 
        WHERE id = $1 
-       AND planter_id = (SELECT id FROM users WHERE uuid = $2)`,
-      [order_id, uuid]
+       AND planter_id = (SELECT id FROM users WHERE supabase_uid = $2)`,
+      [order_id, supabase_uid]
     );
 
     if (!order) {
@@ -42,7 +42,7 @@ async function confirmOrder(req, res) {
     );
 
     if (!updatedOrder) {
-      // This happens if another request modified the status before this update
+      // กรณี status ถูกเปลี่ยนก่อนหน้า
       return res.status(409).json({
         status: "error",
         message: "Order status changed before completion",

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/pages/auth/signup.dart';
 import 'package:frontend/pages/user/homepage.dart';
-import 'package:frontend/pages/planter/orderpage.dart'; // Import order page
-import 'package:frontend/services/api.dart'; // Import API service
+import 'package:frontend/pages/planter/orderpage.dart';
+import 'package:frontend/services/api.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -17,31 +17,36 @@ class _SignInPageState extends State<SignInPage> {
   bool _isLoading = false;
 
   Future<void> _login() async {
-    // Validate inputs
-    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-      _showErrorDialog('Please fill in all fields');
-      return;
-    }
+  if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+    _showErrorDialog('Please fill in all fields');
+    return;
+  }
 
-    setState(() {
-      _isLoading = true;
-    });
+  setState(() {
+    _isLoading = true;
+  });
 
-    try {
-      final credentials = {
-        'email': emailController.text,
-        'password': passwordController.text,
-      };
+  try {
+    final credentials = {
+      'email': emailController.text,
+      'password': passwordController.text,
+    };
 
-      final response = await login(credentials);
-      final userRole = response['data']['user']['role'];
+    final response = await login(credentials);
+
+    if (response['status'] == 'success') {
+      // ตรวจสอบ token ว่าถูกเซ็ตแล้วหรือยัง
+      // print('Access token: ${ApiService.accessToken}');  // สำหรับ debug
+
+      final user = response['data']['user'];
+      final userRole = user['role'];
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Login successful!')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful!')),
+        );
 
-        // Navigate based on role
+        // Navigate by role
         if (userRole == 'user') {
           Navigator.pushReplacement(
             context,
@@ -52,35 +57,39 @@ class _SignInPageState extends State<SignInPage> {
             context,
             MaterialPageRoute(builder: (context) => const OrderPage()),
           );
+        } else {
+          _showErrorDialog('Unknown role: $userRole');
         }
       }
-    } catch (e) {
-      if (mounted) {
-        _showErrorDialog('Login failed: ${e.toString()}');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    } else {
+      _showErrorDialog('Login failed: ${response['message'] ?? 'Unknown error'}');
+    }
+  } catch (e) {
+    if (mounted) {
+      _showErrorDialog('Login failed: ${e.toString()}');
+    }
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
+}
 
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: const Text('Error'),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('OK'),
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
           ),
+        ],
+      ),
     );
   }
 
@@ -140,25 +149,24 @@ class _SignInPageState extends State<SignInPage> {
               const SizedBox(height: 30),
               SizedBox(
                 height: 60,
-                child:
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : OutlinedButton(
-                          onPressed: _login,
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(
-                              color: Colors.black,
-                              width: 1,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : OutlinedButton(
+                        onPressed: _login,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: Colors.black,
+                            width: 1,
                           ),
-                          child: const Text(
-                            'Login',
-                            style: TextStyle(fontSize: 20, color: Colors.black),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
                         ),
+                        child: const Text(
+                          'Login',
+                          style: TextStyle(fontSize: 20, color: Colors.black),
+                        ),
+                      ),
               ),
               const SizedBox(height: 20),
               Center(

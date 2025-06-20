@@ -88,7 +88,7 @@ class _SelectPageState extends State<SelectPage> {
                     title: locationData?['name'] ?? 'Unknown',
                     province: locationData?['province'] ?? 'Unknown',
                     wildlife:
-                        'Wildlife: ${locationData?['wildlife'] ?? 'Unknown'}',
+                        '${locationData?['wildlife'] ?? 'Unknown'}',
                     onTap: () {},
                   ),
             const SizedBox(height: 24),

@@ -22,10 +22,10 @@ class _SignUpPageState extends State<SignUpPage> {
 
   String? selectedProvince;
   final List<String> provinces = [
-    'กรุงเทพฯ',
-    'ชลบุรี',
-    'เชียงใหม่',
-    'นครราชสีมา',
+    'Bangkok',
+    'Chonburi',
+    'Chiang Mai',
+    'Nakhon Ratchasima',
   ];
 
   bool _isLoading = false;
@@ -85,7 +85,7 @@ class _SignUpPageState extends State<SignUpPage> {
             MaterialPageRoute(
               builder:
                   (context) =>
-                      const HomePage(), // Replace with your actual HomePage
+                      const SignInPage(), // Replace with your actual HomePage
             ),
           );
         } else if (selectedRole == 'Planter') {
@@ -94,7 +94,7 @@ class _SignUpPageState extends State<SignUpPage> {
             MaterialPageRoute(
               builder:
                   (context) =>
-                      const OrderPage(), // Replace with your actual OrderPage
+                      const SignInPage(), // Replace with your actual OrderPage
             ),
           );
         }
